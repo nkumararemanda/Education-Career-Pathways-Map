@@ -1,0 +1,1887 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete Indian Education & Career Pathways Map</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- D3.js v7 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Inter Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    /* Custom scrollbar for clean dark UI */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    /* Node and link animations */
+    .node {
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .node:hover {
+      filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));
+    }
+    .link {
+      fill: none;
+      stroke: #334155;
+      stroke-width: 1.8px;
+      transition: stroke 0.3s ease, stroke-width 0.3s ease;
+    }
+    .link.highlighted {
+      stroke: #38bdf8;
+      stroke-width: 3.5px;
+      filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.6));
+    }
+    .node-rect {
+      transition: fill 0.3s ease, stroke 0.3s ease, stroke-width 0.3s ease;
+    }
+    .node.highlighted .node-rect {
+      stroke: #38bdf8 !important;
+      stroke-width: 3px !important;
+    }
+    /* SVG Container rules */
+    #tree-container {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-image: radial-gradient(#1e293b 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+  </style>
+</head>
+<body class="h-full text-slate-100 flex flex-col overflow-hidden select-none">
+
+  <!-- Header Navbar -->
+  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-3 z-20">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+        <i class="fa-solid fa-sitemap text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
+          India Education & Career Roadmap
+        </h1>
+        <p class="text-xs text-slate-400">10th Grade &rarr; Higher Secondary &rarr; Degrees &rarr; Doctorate &rarr; Top Leadership</p>
+      </div>
+    </div>
+
+    <!-- Search & Quick Actions -->
+    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+      <div class="relative flex-1 md:w-80">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+        <input id="search-input" type="text" placeholder="Search career, exam (e.g., NDA, UGC-NET, IAS)..." 
+               class="w-full bg-slate-950/80 border border-slate-700/80 rounded-lg pl-9 pr-8 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
+        <button id="clear-search" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Search Results Dropdown -->
+      <div id="search-results" class="hidden absolute top-14 w-80 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl max-h-60 overflow-y-auto z-50 text-xs divide-y divide-slate-800"></div>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex items-center gap-1.5">
+        <button id="btn-expand-all" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium border border-slate-700 transition flex items-center gap-1.5" title="Expand All Nodes">
+          <i class="fa-solid fa-square-plus text-blue-400"></i> Expand All
+        </button>
+        <button id="btn-collapse-all" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium border border-slate-700 transition flex items-center gap-1.5" title="Collapse All Nodes">
+          <i class="fa-solid fa-square-minus text-amber-400"></i> Collapse
+        </button>
+        <button id="btn-reset-zoom" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium border border-slate-700 transition flex items-center gap-1.5" title="Reset Camera View">
+          <i class="fa-solid fa-compress text-emerald-400"></i> Reset View
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Filter Bar -->
+  <div class="bg-slate-900/60 border-b border-slate-800/80 px-4 py-2 flex items-center gap-2 overflow-x-auto text-xs z-10 scrollbar-none">
+    <span class="text-slate-400 font-semibold uppercase tracking-wider text-[10px] shrink-0 mr-1">Filter Stream:</span>
+    <button class="filter-btn active px-3 py-1 rounded-full border border-blue-500 bg-blue-500/20 text-blue-300 font-medium transition" data-stream="all">
+      All Streams
+    </button>
+    <button class="filter-btn px-3 py-1 rounded-full border border-slate-700 bg-slate-800/80 hover:border-sky-500 hover:text-sky-300 text-slate-300 transition" data-stream="pcm">
+      <i class="fa-solid fa-atom text-sky-400 mr-1"></i> Science (PCM)
+    </button>
+    <button class="filter-btn px-3 py-1 rounded-full border border-slate-700 bg-slate-800/80 hover:border-emerald-500 hover:text-emerald-300 text-slate-300 transition" data-stream="pcb">
+      <i class="fa-solid fa-dna text-emerald-400 mr-1"></i> Science (PCB/Medicine)
+    </button>
+    <button class="filter-btn px-3 py-1 rounded-full border border-slate-700 bg-slate-800/80 hover:border-red-500 hover:text-red-300 text-slate-300 transition" data-stream="defence">
+      <i class="fa-solid fa-shield-halved text-red-400 mr-1"></i> Defence & Armed Forces
+    </button>
+    <button class="filter-btn px-3 py-1 rounded-full border border-slate-700 bg-slate-800/80 hover:border-indigo-500 hover:text-indigo-300 text-slate-300 transition" data-stream="academia">
+      <i class="fa-solid fa-chalkboard-user text-indigo-400 mr-1"></i> Education & Academia
+    </button>
+    <button class="filter-btn px-3 py-1 rounded-full border border-slate-700 bg-slate-800/80 hover:border-amber-500 hover:text-amber-300 text-slate-300 transition" data-stream="commerce">
+      <i class="fa-solid fa-chart-line text-amber-400 mr-1"></i> Commerce & Finance
+    </button>
+    <button class="filter-btn px-3 py-1 rounded-full border border-slate-700 bg-slate-800/80 hover:border-purple-500 hover:text-purple-300 text-slate-300 transition" data-stream="arts">
+      <i class="fa-solid fa-building-columns text-purple-400 mr-1"></i> Arts, Humanities & IAS
+    </button>
+    <button class="filter-btn px-3 py-1 rounded-full border border-slate-700 bg-slate-800/80 hover:border-yellow-500 hover:text-yellow-300 text-slate-300 transition" data-stream="law">
+      <i class="fa-solid fa-scale-balanced text-yellow-400 mr-1"></i> Law & Judiciary
+    </button>
+    <button class="filter-btn px-3 py-1 rounded-full border border-slate-700 bg-slate-800/80 hover:border-pink-500 hover:text-pink-300 text-slate-300 transition" data-stream="design">
+      <i class="fa-solid fa-pen-ruler text-pink-400 mr-1"></i> Design & Arch
+    </button>
+    <button class="filter-btn px-3 py-1 rounded-full border border-slate-700 bg-slate-800/80 hover:border-teal-500 hover:text-teal-300 text-slate-300 transition" data-stream="vocational">
+      <i class="fa-solid fa-gears text-teal-400 mr-1"></i> Vocational / Diploma
+    </button>
+  </div>
+
+  <!-- Main Canvas Container -->
+  <main class="relative flex-1 w-full h-full overflow-hidden">
+    <!-- D3 Tree Render Canvas -->
+    <div id="tree-container"></div>
+
+    <!-- Floating Legend -->
+    <div class="absolute bottom-4 left-4 bg-slate-900/90 border border-slate-800 rounded-xl p-3 shadow-2xl backdrop-blur text-xs hidden lg:block z-10 pointer-events-none">
+      <div class="font-bold text-slate-300 mb-2 border-b border-slate-800 pb-1">Level Indicators</div>
+      <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] text-slate-400">
+        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span> Standard 10th / 12th</div>
+        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Bachelor's Degree</div>
+        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Master's Degree</div>
+        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Doctorate / Ph.D</div>
+        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Professional Cert</div>
+        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Leadership Role</div>
+      </div>
+    </div>
+
+    <!-- Zoom Controls Floating -->
+    <div class="absolute bottom-4 right-4 flex flex-col gap-1 z-10">
+      <button id="zoom-in" class="w-8 h-8 bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg flex items-center justify-center shadow-lg transition">
+        <i class="fa-solid fa-plus text-xs"></i>
+      </button>
+      <button id="zoom-out" class="w-8 h-8 bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg flex items-center justify-center shadow-lg transition">
+        <i class="fa-solid fa-minus text-xs"></i>
+      </button>
+    </div>
+
+    <!-- Slide-over Drawer Modal for Detailed Info -->
+    <aside id="detail-drawer" class="fixed inset-y-0 right-0 w-full max-w-md bg-slate-900 border-l border-slate-800 shadow-2xl z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+      <!-- Drawer Header -->
+      <div class="p-4 border-b border-slate-800 flex items-start justify-between bg-slate-950/60">
+        <div>
+          <span id="drawer-stream-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-blue-500/20 text-blue-400 border border-blue-500/30">
+            Stream
+          </span>
+          <h2 id="drawer-title" class="text-xl font-bold text-slate-100 mt-1">Node Title</h2>
+          <p id="drawer-level" class="text-xs text-slate-400">Level: Bachelor's</p>
+        </div>
+        <button id="close-drawer" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Drawer Content Scrollable -->
+      <div class="flex-1 overflow-y-auto p-5 space-y-5 text-xs text-slate-300">
+        <!-- Overview / Description -->
+        <div class="bg-slate-950/40 p-3.5 rounded-xl border border-slate-800/80">
+          <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-info text-blue-400"></i> Overview & Pathway Summary
+          </h3>
+          <p id="drawer-description" class="leading-relaxed text-slate-300">Detailed summary will appear here.</p>
+        </div>
+
+        <!-- Key Metrics Cards -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-slate-950/50 p-3 rounded-xl border border-slate-800">
+            <div class="text-slate-400 text-[11px] mb-0.5">Typical Duration</div>
+            <div id="drawer-duration" class="text-slate-100 font-bold text-sm">3 - 4 Years</div>
+          </div>
+          <div class="bg-slate-950/50 p-3 rounded-xl border border-slate-800">
+            <div class="text-slate-400 text-[11px] mb-0.5">Est. Pay / Stipend</div>
+            <div id="drawer-salary" class="text-emerald-400 font-bold text-sm">₹6 - ₹12 LPA</div>
+          </div>
+        </div>
+
+        <!-- Entrance Exams -->
+        <div class="bg-slate-950/40 p-3.5 rounded-xl border border-slate-800/80">
+          <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-file-pen text-amber-400"></i> Entrance Exams / Requirements
+          </h3>
+          <div id="drawer-exams" class="flex flex-wrap gap-1.5"></div>
+        </div>
+
+        <!-- Top Institutions -->
+        <div class="bg-slate-950/40 p-3.5 rounded-xl border border-slate-800/80">
+          <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-building-columns text-purple-400"></i> Top Premier Institutions in India
+          </h3>
+          <ul id="drawer-institutions" class="space-y-1 text-slate-300 list-disc list-inside"></ul>
+        </div>
+
+        <!-- Core Competencies -->
+        <div class="bg-slate-950/40 p-3.5 rounded-xl border border-slate-800/80">
+          <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-bolt text-emerald-400"></i> Key Competencies & Skills
+          </h3>
+          <div id="drawer-skills" class="flex flex-wrap gap-1.5"></div>
+        </div>
+      </div>
+
+      <!-- Drawer Footer -->
+      <div class="p-4 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between text-xs">
+        <span class="text-slate-500">Click anywhere on canvas to dismiss</span>
+        <button id="drawer-trace-btn" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition flex items-center gap-1.5 shadow-lg shadow-blue-600/30">
+          <i class="fa-solid fa-route"></i> Trace Path
+        </button>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    // ==========================================
+    // 1. COMPREHENSIVE CAREER TREE DATA STRUCTURE
+    // ==========================================
+    const treeData = {
+      id: "root_10th",
+      name: "Class 10th (Secondary Schooling)",
+      level: "School",
+      stream: "all",
+      duration: "10 Years Schooling",
+      salary: "N/A",
+      description: "Foundation stage after Class 10 Board Examinations (CBSE, ICSE, State Boards). Branch out into Higher Secondary streams, Technical Diplomas, or Vocational Training.",
+      exams: ["CBSE 10th", "ICSE 10th", "State Board SSLC"],
+      institutions: ["State & Central Schools across India"],
+      skills: ["Core Science", "Mathematics", "Languages", "Basic Reasoning"],
+      children: [
+        // ----------------------------------------------------
+        // STREAM 1: SCIENCE (PCM)
+        // ----------------------------------------------------
+        {
+          id: "pcm_12th",
+          name: "10+2 Science (PCM / PCMB)",
+          level: "Higher Secondary",
+          stream: "pcm",
+          duration: "2 Years",
+          salary: "N/A",
+          description: "Focus on Physics, Chemistry, and Mathematics (optional Biology/CS). Gateway to Engineering, Aviation, Defense, Architecture, and Pure Sciences.",
+          exams: ["JEE Main", "JEE Advanced", "BITSAT", "NDA", "CUET", "MHTCET", "KCET"],
+          institutions: ["CBSE", "ISC", "State Higher Secondary Boards"],
+          skills: ["Analytical Skills", "Calculus", "Physics Principles", "Logical Problem Solving"],
+          children: [
+            {
+              id: "btech_cse",
+              name: "B.Tech / B.E. Computer Science & AI",
+              level: "Bachelor's",
+              stream: "pcm",
+              duration: "4 Years",
+              salary: "8 - 25 LPA",
+              description: "Core specialization in Software Engineering, AI/ML, Cybersecurity, Data Structures, and System Architecture.",
+              exams: ["JEE Advanced", "JEE Main", "BITSAT", "VITEEE"],
+              institutions: ["IIT Bombay", "IIT Delhi", "IIT Madras", "BITS Pilani", "NIT Trichy"],
+              skills: ["Data Structures", "Algorithms", "System Design", "Machine Learning"],
+              children: [
+                {
+                  id: "mtech_cs",
+                  name: "M.Tech in CS / AI / Data Science",
+                  level: "Master's",
+                  stream: "pcm",
+                  duration: "2 Years",
+                  salary: "12 - 35 LPA",
+                  description: "Advanced computational research, deep learning algorithms, and distributed system engineering.",
+                  exams: ["GATE CS"],
+                  institutions: ["IISc Bangalore", "IIT Bombay", "IIT Kanpur", "IIT Kharagpur"],
+                  skills: ["Deep Learning", "Distributed Computing", "Algorithm Research"],
+                  children: [
+                    {
+                      id: "phd_cs",
+                      name: "Ph.D. in AI / Quantum Computing",
+                      level: "Doctorate",
+                      stream: "pcm",
+                      duration: "3 - 5 Years",
+                      salary: "Stipend: 37k-42k/mo | 25-50 LPA post-doc",
+                      description: "Cutting-edge algorithmic research, publishing in international journals (IEEE, ACM).",
+                      exams: ["CSIR-NET", "GATE", "Institute Direct Ph.D. Exams"],
+                      institutions: ["IISc Bangalore", "TIFR", "IIT Delhi", "Carnegie Mellon (Abroad Dual Degree)"],
+                      skills: ["Research Methodology", "Mathematical Modeling", "Advanced Quantum Algorithms"],
+                      children: [
+                        {
+                          id: "lead_chief_scientist",
+                          name: "Chief AI Scientist / Engineering VP",
+                          level: "Leadership",
+                          stream: "pcm",
+                          duration: "10+ Yrs Exp",
+                          salary: "60 LPA - 2+ Cr",
+                          description: "Heading R&D divisions, large-scale enterprise AI architecture, and global tech strategy.",
+                          exams: ["Executive Evaluation", "Industry Peer Review"],
+                          institutions: ["Global Tech R&D Centers", "Top AI Labs (Google DeepMind, Microsoft Research)"],
+                          skills: ["Tech Vision", "R&D Strategy", "Team Leadership", "Product Innovation"]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              id: "btech_mech_civil",
+              name: "B.Tech Mech / Civil / Core Engineering",
+              level: "Bachelor's",
+              stream: "pcm",
+              duration: "4 Years",
+              salary: "6 - 15 LPA",
+              description: "Fundamentals of Robotics, Thermal Systems, Structural Design, and Infrastructure Development.",
+              exams: ["JEE Main", "JEE Advanced", "State CETs"],
+              institutions: ["IIT Roorkee", "IIT Madras", "NIT Surathkal"],
+              skills: ["CAD/CAM", "Thermodynamic Analysis", "Structural Calculations"],
+              children: [
+                {
+                  id: "mtech_mech",
+                  name: "M.Tech Structural / Robotics / CAD",
+                  level: "Master's",
+                  stream: "pcm",
+                  duration: "2 Years",
+                  salary: "10 - 22 LPA",
+                  description: "Specialization in Aerodynamics, Autonomous Mechatronics, or Sustainable Infrastructure.",
+                  exams: ["GATE Mechanical / Civil"],
+                  institutions: ["IIT Madras", "IIT Bombay", "IISc Bangalore"],
+                  skills: ["Finite Element Analysis", "Mechatronics", "Structural Engineering"],
+                  children: [
+                    {
+                      id: "lead_director_engg",
+                      name: "Chief Engineer / Managing Director (PSU/EPC)",
+                      level: "Leadership",
+                      stream: "pcm",
+                      duration: "15+ Yrs Exp",
+                      salary: "40 - 90 LPA",
+                      description: "Leading mega infrastructure projects, PSU directorships (ISRO, BHEL, L&T, NTPC).",
+                      exams: ["UPSC ESE (Engineering Services Exam)"],
+                      institutions: ["ISRO", "DRDO", "L&T", "NHAI", "NTPC"],
+                      skills: ["Mega-Project Management", "PSU Governance", "Structural Dynamics"]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              id: "pure_science_pcm",
+              name: "B.Sc (Hons) Physics / Math / Chemistry",
+              level: "Bachelor's",
+              stream: "pcm",
+              duration: "3 - 4 Years",
+              salary: "4 - 8 LPA",
+              description: "Theoretical basis of fundamental sciences, mathematical modeling, and experimental lab physics.",
+              exams: ["CUET UG", "NEST", "IAT (IISER Entrance)"],
+              institutions: ["IISERs", "St. Stephen's College", "St. Xavier's Mumbai", "IISc"],
+              skills: ["Theoretical Physics", "Mathematical Proofs", "Analytical Research"],
+              children: [
+                {
+                  id: "msc_pure_science",
+                  name: "M.Sc Pure Sciences / Mathematical Physics",
+                  level: "Master's",
+                  stream: "pcm",
+                  duration: "2 Years",
+                  salary: "6 - 14 LPA",
+                  description: "Advanced quantum mechanics, astrophysics, pure analysis, and laboratory investigations.",
+                  exams: ["JAM (Joint Admission test for Masters)", "CUET PG"],
+                  institutions: ["IIT Bombay (M.Sc)", "TIFR", "JNCASR", "Delhi University"],
+                  skills: ["Quantum Theory", "Complex Analysis", "Research Writing"],
+                  children: [
+                    {
+                      id: "phd_pure_science",
+                      name: "Ph.D. Sciences & Post-Doc Research",
+                      level: "Doctorate",
+                      stream: "pcm",
+                      duration: "4 - 6 Years",
+                      salary: "Stipend: 37k-50k/mo | 20-40 LPA",
+                      description: "Deep fundamental breakthroughs, particle physics experimentation, post-doctoral fellowships.",
+                      exams: ["CSIR-NET JRF", "GATE"],
+                      institutions: ["TIFR Mumbai", "IISc", "CERN (Collaborative)", "Raman Research Institute"],
+                      skills: ["Experimental Physics", "Peer-Reviewed Publishing", "Grant Writing"],
+                      children: [
+                        {
+                          id: "lead_isro_director",
+                          name: "Director / Senior Scientist (ISRO, BARC, TIFR)",
+                          level: "Leadership",
+                          stream: "pcm",
+                          duration: "15+ Yrs Exp",
+                          salary: "35 - 75 LPA",
+                          description: "Directing national scientific missions, space exploration, atomic energy research, and space tech.",
+                          exams: ["Scientific Selection Board"],
+                          institutions: ["ISRO", "BARC", "DRDO", "Department of Atomic Energy"],
+                          skills: ["Space Mission Architecture", "Atomic Research", "Strategic Leadership"]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              id: "aviation_cpl",
+              name: "Aviation: Commercial Pilot License (CPL)",
+              level: "Bachelor's",
+              stream: "pcm",
+              duration: "1.5 - 2 Years",
+              salary: "15 - 30 LPA",
+              description: "Ground school training and 200+ flying hours to operate commercial jetliner aircraft.",
+              exams: ["DGCA Theory Exams", "Class 1 Medical Examination"],
+              institutions: ["IGRUA Rae Bareli", "National Flying Training Institute (NFTI)", "CAE Oxford"],
+              skills: ["Flight Navigation", "Avionics", "Emergency Operations", "Aerodynamics"],
+              children: [
+                {
+                  id: "atpl_commander",
+                  name: "Airline Transport Pilot (ATPL) / Senior Captain",
+                  level: "Leadership",
+                  stream: "pcm",
+                  duration: "5 - 10 Yrs Flying",
+                  salary: "40 - 90 LPA",
+                  description: "Commanding long-haul widebody aircraft, Flight Operations Director, Chief Flight Instructor.",
+                  exams: ["DGCA ATPL Exam", "Type Rating (A320/B777)"],
+                  institutions: ["Air India", "IndiGo", "SpiceJet", "DGCA Approved Airlines"],
+                  skills: ["Commander Operations", "CRM", "Crew Management", "Aviation Law"]
+                }
+              ]
+            },
+            {
+              id: "merchant_navy",
+              name: "Merchant Navy: B.Sc Nautical Science / Marine Engg",
+              level: "Bachelor's",
+              stream: "pcm",
+              duration: "3 - 4 Years",
+              salary: "8 - 18 LPA",
+              description: "Maritime navigation, cargo handling, marine engines, and global ocean vessel management.",
+              exams: ["IMU-CET (Indian Maritime University)"],
+              institutions: ["Indian Maritime University (IMU)", "Tolani Maritime Institute", "T.S. Chanakya"],
+              skills: ["Ship Navigation", "Marine Diesel Engines", "Seamanship"],
+              children: [
+                {
+                  id: "master_mariner",
+                  name: "Master Mariner / Chief Engineer (Ship Captain)",
+                  level: "Leadership",
+                  stream: "pcm",
+                  duration: "8 - 12 Yrs Sea Time",
+                  salary: "50 - 1.2 Cr LPA",
+                  description: "Full command over international cargo containers, oil tankers, or fleet operations management.",
+                  exams: ["DG Shipping Competency Exams (Class 1 Master)"],
+                  institutions: ["Global Shipping Lines (Maersk, MSC, Synergy)"],
+                  skills: ["Oceanic Navigation", "Fleet Governance", "International Maritime Law"]
+                }
+              ]
+            }
+          ]
+        },
+
+        // ----------------------------------------------------
+        // STREAM 2: SCIENCE (PCB / MEDICINE & ALLIED)
+        // ----------------------------------------------------
+        {
+          id: "pcb_12th",
+          name: "10+2 Science (PCB / PCMB)",
+          level: "Higher Secondary",
+          stream: "pcb",
+          duration: "2 Years",
+          salary: "N/A",
+          description: "Focus on Physics, Chemistry, and Biology. Gateway to Medical, Dental, Veterinary, Pharmacy, and Life Sciences.",
+          exams: ["NEET UG", "CUET UG"],
+          institutions: ["CBSE", "ISC", "State Higher Secondary Boards"],
+          skills: ["Biological Systems", "Anatomy", "Organic Chemistry", "Clinical Reasoning"],
+          children: [
+            {
+              id: "mbbs",
+              name: "MBBS (Bachelor of Medicine & Surgery)",
+              level: "Bachelor's",
+              stream: "pcb",
+              duration: "5.5 Years (Inc. 1 Yr Internship)",
+              salary: "7 - 14 LPA (Junior Resident)",
+              description: "Comprehensive medical training in Human Anatomy, Physiology, Pathology, Pharmacology, and Surgery.",
+              exams: ["NEET UG"],
+              institutions: ["AIIMS New Delhi", "JIPMER", "KGMU Lucknow", "CMC Vellore", "Grant Medical College"],
+              skills: ["Clinical Diagnosis", "Patient Care", "Surgical Basics", "Pharmacology"],
+              children: [
+                {
+                  id: "md_ms",
+                  name: "MD / MS / DNB (Post Graduation Medical)",
+                  level: "Master's",
+                  stream: "pcb",
+                  duration: "3 Years",
+                  salary: "12 - 25 LPA (Senior Resident)",
+                  description: "Specialization in General Medicine, General Surgery, Paediatrics, Radiodiagnosis, Orthopaedics, etc.",
+                  exams: ["NEET PG", "INI-CET (AIIMS/JIPMER)"],
+                  institutions: ["AIIMS New Delhi", "PGIMER Chandigarh", "PGI Lucknow", "Maulana Azad Medical College"],
+                  skills: ["Specialization Diagnosis", "Operative Procedures", "Critical Emergency Care"],
+                  children: [
+                    {
+                      id: "dm_mch",
+                      name: "DM / M.Ch / DrNB (Super-Specialty)",
+                      level: "Doctorate",
+                      stream: "pcb",
+                      duration: "3 Years",
+                      salary: "25 - 60 LPA",
+                      description: "Sub-specialization in Cardiology, Neurosurgery, Medical Oncology, Gastroenterology, Uro-surgery.",
+                      exams: ["NEET SS", "INI-SS"],
+                      institutions: ["AIIMS New Delhi", "PGIMER Chandigarh", "Sree Chitra Tirunal Institute"],
+                      skills: ["Complex Neurosurgery", "Interventional Cardiology", "Onco-surgery Protocols"],
+                      children: [
+                        {
+                          id: "lead_medical_director",
+                          name: "Medical Director / Chief Surgeon / AIIMS Director",
+                          level: "Leadership",
+                          stream: "pcb",
+                          duration: "15+ Yrs Exp",
+                          salary: "60 LPA - 1.5 Cr",
+                          description: "Heading hospital networks, clinical research institutes, medical boards, and health policy.",
+                          exams: ["Superintendent Boards / Direct Appointment"],
+                          institutions: ["AIIMS", "Apollo Hospitals", "Fortis", "Max Healthcare"],
+                          skills: ["Hospital Administration", "Clinical Governance", "Surgical Innovation"]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              id: "bds_dental",
+              name: "BDS (Bachelor of Dental Surgery)",
+              level: "Bachelor's",
+              stream: "pcb",
+              duration: "5 Years",
+              salary: "4 - 8 LPA",
+              description: "Oral healthcare, dental surgery, prosthodontics, and maxillo-facial treatment.",
+              exams: ["NEET UG"],
+              institutions: ["Maulana Azad Institute of Dental Sciences", "Manipal College of Dental Sciences"],
+              skills: ["Dental Procedures", "Oral Surgery", "Prosthetics"],
+              children: [
+                {
+                  id: "mds_dental",
+                  name: "MDS (Master of Dental Surgery)",
+                  level: "Master's",
+                  stream: "pcb",
+                  duration: "3 Years",
+                  salary: "8 - 20 LPA",
+                  description: "Advanced Orthodontics, Maxillofacial Surgery, Periodontics, and Endodontics.",
+                  exams: ["NEET MDS"],
+                  institutions: ["Government Dental Colleges", "King George's Medical University"],
+                  skills: ["Maxillofacial Reconstruction", "Orthodontic Alignments"]
+                }
+              ]
+            },
+            {
+              id: "pharmacy",
+              name: "B.Pharm / Pharm.D (Pharmacy)",
+              level: "Bachelor's",
+              stream: "pcb",
+              duration: "4 - 6 Years",
+              salary: "4 - 9 LPA",
+              description: "Drug formulation, clinical pharmacology, pharmaceutical chemistry, and clinical trials.",
+              exams: ["GPAT", "BITSAT", "MHTCET", "State Entrance"],
+              institutions: ["NIPER Mohali", "ICT Mumbai", "BITS Pilani", "Jamia Hamdard"],
+              skills: ["Drug Chemistry", "Pharmacokinetics", "Clinical Trials"],
+              children: [
+                {
+                  id: "mpharm_niper",
+                  name: "M.Pharm / Ph.D in Pharmaceutical R&D",
+                  level: "Doctorate",
+                  stream: "pcb",
+                  duration: "2 - 5 Years",
+                  salary: "10 - 30 LPA",
+                  description: "Novel drug discovery, pharmaceutical formulation, regulatory filings (US FDA).",
+                  exams: ["NIPER JEE", "GPAT"],
+                  institutions: ["NIPERs", "ICT Mumbai", "Dr. Reddy's R&D Labs"],
+                  skills: ["Drug Synthesis", "Regulatory Compliance", "Clinical Research"],
+                  children: [
+                    {
+                      id: "pharma_vprnd",
+                      name: "VP / Head of Pharma R&D",
+                      level: "Leadership",
+                      stream: "pcb",
+                      duration: "12+ Yrs Exp",
+                      salary: "45 - 90 LPA",
+                      description: "Heading global pharmaceutical research, formulation pipelines, and clinical trial strategy.",
+                      exams: ["Corporate Promotion Board"],
+                      institutions: ["Sun Pharma", "Cipla", "Dr. Reddy's", "Biocon"],
+                      skills: ["Pharma Strategy", "US-FDA Compliance", "Biotech Innovation"]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              id: "biotech_life_sciences",
+              name: "B.Sc / B.Tech Biotechnology & Life Sciences",
+              level: "Bachelor's",
+              stream: "pcb",
+              duration: "3 - 4 Years",
+              salary: "4 - 8 LPA",
+              description: "Genomics, recombinant DNA technology, molecular biology, and bioprocess engineering.",
+              exams: ["CUET UG", "JEE Main", "GAT-B"],
+              institutions: ["JNU Delhi", "DU", "IIT Delhi (Biotech)", "VIT Vellore"],
+              skills: ["Gene Editing (CRISPR)", "Molecular Biology", "Bioprocess"],
+              children: [
+                {
+                  id: "msc_phd_biotech",
+                  name: "M.Sc / Ph.D in Molecular Genetics / Immunology",
+                  level: "Doctorate",
+                  stream: "pcb",
+                  duration: "5 - 6 Years",
+                  salary: "8 - 25 LPA",
+                  description: "Advanced genetic engineering, vaccine research, cancer immunotherapy, cellular biology.",
+                  exams: ["CSIR-NET JRF", "DBT-BET", "ICMR JRF"],
+                  institutions: ["NCBS Bangalore", "IISc", "JNU", "TIFR", "CCMB Hyderabad"],
+                  skills: ["Genomic Sequencing", "Immunology Research", "Cell Culture"]
+                }
+              ]
+            }
+          ]
+        },
+
+        // ----------------------------------------------------
+        // STREAM 3: DEFENCE & ARMED FORCES
+        // ----------------------------------------------------
+        {
+          id: "defence_forces_path",
+          name: "Defence Services & Armed Forces",
+          level: "Higher Secondary",
+          stream: "defence",
+          duration: "Career Pipeline",
+          salary: "Officer Grade (Pay Level 10+)",
+          description: "Commissioned Officer roles in Indian Army, Indian Navy, and Indian Air Force via Direct & Entry Exams.",
+          exams: ["NDA & NA Exam", "TES (Technical Entry)", "Airmen / Sailor Recruitment"],
+          institutions: ["NDA Khadakwasla", "IMA Dehradun", "INA Ezhimala", "AFA Dundigal"],
+          skills: ["Strategic Leadership", "Physical Endurance", "Tactical Warfare", "Commanding Skills"],
+          children: [
+            {
+              id: "nda_entry",
+              name: "National Defence Academy (NDA) / TES Entry",
+              level: "Bachelor's",
+              stream: "defence",
+              duration: "3 Yrs NDA + 1 Yr Academy (B.Sc/B.Tech Degree)",
+              salary: "56,100/mo (Stipend) -> 8 - 16 LPA",
+              description: "Joint military academy for Army, Navy, and Air Force cadets. Awards Jawaharlal Nehru University degree.",
+              exams: ["UPSC NDA & NA Exam", "SSB Interview (5-Day Process)", "Medical Board"],
+              institutions: ["NDA Khadakwasla Pune", "IMA Dehradun", "Air Force Academy Dundigal"],
+              skills: ["Military Tactics", "Navigation", "Drill", "Weaponry", "Leadership"],
+              children: [
+                {
+                  id: "commissioned_officer",
+                  name: "Commissioned Officer (Lieutenant / Flying Officer / Sub Lieutenant)",
+                  level: "Bachelor's",
+                  stream: "defence",
+                  duration: "Initial Service",
+                  salary: "10 - 18 LPA",
+                  description: "Commanding tactical platoons, flying fighter jets, or navigating naval warships.",
+                  exams: ["Service Selection Board (SSB)"],
+                  institutions: ["Indian Army", "Indian Air Force", "Indian Navy"],
+                  skills: ["Tactical Command", "Combat Readiness", "Unit Management"],
+                  children: [
+                    {
+                      id: "defence_staff_college",
+                      name: "Mid-Career: Defence Services Staff College (DSSC) / M.Sc Defence Studies",
+                      level: "Master's",
+                      stream: "defence",
+                      duration: "1 Year Staff Course",
+                      salary: "18 - 30 LPA (Major / Wing Commander rank)",
+                      description: "Tactical and strategic staff officer training, joint service operations, national security strategy.",
+                      exams: ["Staff Selection Board Exam"],
+                      institutions: ["Defence Services Staff College (DSSC) Wellington", "Naval War College"],
+                      skills: ["Joint Operations", "Strategic Planning", "Military Logistics"],
+                      children: [
+                        {
+                          id: "phd_higher_command",
+                          name: "Higher Command Course / Ph.D in Strategic & Defence Studies",
+                          level: "Doctorate",
+                          stream: "defence",
+                          duration: "Higher Military Research",
+                          salary: "30 - 45 LPA (Brigadier / Air Commodore rank)",
+                          description: "Higher command leadership, nuclear deterrence policy, geopolitics, and theatre command strategy.",
+                          exams: ["Service Nomination"],
+                          institutions: ["National Defence College (NDC) New Delhi", "Army War College Mhow"],
+                          skills: ["Geopolitical Strategy", "Theatre Command Operations", "National Defense Policy"],
+                          children: [
+                            {
+                              id: "flag_officer_general",
+                              name: "Flag Officer / Chief of Staff (General / Admiral / Air Chief Marshal)",
+                              level: "Leadership",
+                              stream: "defence",
+                              duration: "Top Command",
+                              salary: " Pay Level 17 (Apex Scale - 2.5 Lakh/mo + Perks)",
+                              description: "Apex leadership of the Indian Armed Forces, CDS (Chief of Defence Staff), Army/Navy/Air Chiefs.",
+                              exams: ["Appointments Committee of the Cabinet (ACC)"],
+                              institutions: ["Integrated Defence Staff", "Ministry of Defence"],
+                              skills: ["National Defense Leadership", "Joint Theatre Command", "Geopolitical Warfare"]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              id: "cds_afcat_grad_entry",
+              name: "Post-Graduation Defence Entries (CDS / AFCAT / INET / JAG Entry)",
+              level: "Bachelor's",
+              stream: "defence",
+              duration: "1 - 1.5 Years Training",
+              salary: "10 - 18 LPA",
+              description: "Direct officer entry for civilian graduates (B.E/B.Tech/B.A/LL.B) into Officers Training Academy or Air Force Academy.",
+              exams: ["UPSC CDS", "AFCAT", "INET", "JAG Special Entry (Law Graduates)"],
+              institutions: ["OTA Chennai", "IMA Dehradun", "Air Force Academy Dundigal"],
+              skills: ["Officer Like Qualities (OLQ)", "Strategic Decision Making"]
+            }
+          ]
+        },
+
+        // ----------------------------------------------------
+        // STREAM 4: EDUCATION, TEACHING & ACADEMIA
+        // ----------------------------------------------------
+        {
+          id: "education_academia_path",
+          name: "Education, Teaching & Academia",
+          level: "Higher Secondary",
+          stream: "academia",
+          duration: "Academic Pipeline",
+          salary: "4 - 30+ LPA",
+          description: "Structured pathways for School Teaching (CTET/PGT) and University Professorship & Research.",
+          exams: ["CUET UG", "State B.Ed Entrance"],
+          institutions: ["Central Universities", "State B.Ed Colleges", "NCERT"],
+          skills: ["Pedagogy", "Curriculum Design", "Educational Psychology"],
+          children: [
+            // School Teaching Route
+            {
+              id: "bed_school_teaching",
+              name: "School Teaching Route: B.A / B.Sc + B.Ed / Integrated ITEP",
+              level: "Bachelor's",
+              stream: "academia",
+              duration: "4 Years (Integrated) or 3+2 Years",
+              salary: "4 - 9 LPA",
+              description: "Professional degree in pedagogy, educational psychology, and subject teaching methods.",
+              exams: ["CTET (Central Teacher Eligibility Test)", "State TET", "CUET"],
+              institutions: ["Regional Institutes of Education (RIE NCERT)", "Delhi University (CIE)", "State Universities"],
+              skills: ["Classroom Management", "Pedagogical Content", "Assessment Tools"],
+              children: [
+                {
+                  id: "pgt_med_teacher",
+                  name: "PGT Teacher / M.Ed (Master of Education)",
+                  level: "Master's",
+                  stream: "academia",
+                  duration: "2 Years",
+                  salary: "6 - 12 LPA",
+                  description: "Post Graduate Teacher (PGT) for Senior Secondary classes (11th & 12th) or Educational Administrator.",
+                  exams: ["KVS / NVS PGT Recruitment Exams", "DSSSB", "State PGT"],
+                  institutions: ["Kendriya Vidyalayas (KVS)", "Navodaya Vidyalayas (NVS)", "Top Private Schools"],
+                  skills: ["Advanced Subject Pedagogy", "Curriculum Development"],
+                  children: [
+                    {
+                      id: "school_principal_inspector",
+                      name: "School Principal / Education Inspector / Director of Schooling",
+                      level: "Leadership",
+                      stream: "academia",
+                      duration: "10+ Yrs Exp",
+                      salary: "12 - 25 LPA",
+                      description: "Head of institution, managing school operations, CBSE compliance, and academic excellence.",
+                      exams: ["Principal Recruitment Interviews", "State Education Service Exams"],
+                      institutions: ["KVS", "NVS", "International Baccalaureate (IB) Schools"],
+                      skills: ["Institutional Governance", "Academic Leadership", "Educational Policy"]
+                    }
+                  ]
+                }
+              ]
+            },
+            // Higher Education & Research Route
+            {
+              id: "higher_ed_professor_path",
+              name: "Higher Education Route: Master's Degree (M.A / M.Sc / M.Com)",
+              level: "Master's",
+              stream: "academia",
+              duration: "2 Years",
+              salary: "5 - 10 LPA",
+              description: "In-depth academic mastery in chosen subject. Gateway to UGC-NET qualification and Professorship.",
+              exams: ["CUET PG", "University Entrance Exams"],
+              institutions: ["JNU Delhi", "Delhi University", "BHU", "Hyderabad Central University (HCU)"],
+              skills: ["Academic Writing", "Subject Mastery", "Research Design"],
+              children: [
+                {
+                  id: "net_jrf_phd",
+                  name: "UGC-NET JRF / CSIR-NET & Ph.D Qualification",
+                  level: "Doctorate",
+                  stream: "academia",
+                  duration: "4 - 5 Years",
+                  salary: "Stipend: 37k - 42k/mo JRF/SRF",
+                  description: "National level eligibility for Assistant Professorship and Doctorate research fellowship.",
+                  exams: ["UGC-NET JRF", "CSIR-NET JRF", "GATE (Humanities / Sciences)"],
+                  institutions: ["IITs (Humanities Dept)", "JNU", "DU", "TIFR", "Central Universities"],
+                  skills: ["Original Research", "Thesis Writing", "Journal Publication"],
+                  children: [
+                    {
+                      id: "assistant_professor",
+                      name: "Assistant Professor & Associate Professor",
+                      level: "Doctorate",
+                      stream: "academia",
+                      duration: "5 - 10 Yrs Service",
+                      salary: "Pay Level 10 to 13A (10 - 22 LPA)",
+                      description: "University faculty lecturing undergraduate and postgraduate students, guiding Ph.D scholars.",
+                      exams: ["UPSC Assistant Professor", "State PSC / University Selection Committees"],
+                      institutions: ["Central Universities", "IITs", "IIMs", "NITs", "State Universities"],
+                      skills: ["Lecturing", "Research Guidance", "Grants & Publishing"],
+                      children: [
+                        {
+                          id: "full_professor_vc",
+                          name: "Full Professor / Dean / Vice-Chancellor / Director",
+                          level: "Leadership",
+                          stream: "academia",
+                          duration: "15+ Yrs Academic Exp",
+                          salary: "Pay Level 14 to 17 (25 - 50 LPA)",
+                          description: "Top executive academic authority, presiding over university senates, research grants, and policy.",
+                          exams: ["Search-cum-Selection Committee"],
+                          institutions: ["Central Universities", "UGC", "NAAC", "Ministry of Education"],
+                          skills: ["Higher Ed Policy", "University Governance", "Global Institutional Rankings"]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+
+        // ----------------------------------------------------
+        // STREAM 5: COMMERCE, FINANCE & MANAGEMENT
+        // ----------------------------------------------------
+        {
+          id: "commerce_12th",
+          name: "10+2 Commerce Stream",
+          level: "Higher Secondary",
+          stream: "commerce",
+          duration: "2 Years",
+          salary: "N/A",
+          description: "Focus on Accountancy, Business Studies, Economics, and Financial Mathematics.",
+          exams: ["CUET UG", "CA Foundation", "CS Executive Entrance (CSEET)", "IPMAT"],
+          institutions: ["CBSE", "ISC", "State Boards"],
+          skills: ["Accounting Standards", "Financial Analysis", "Macroeconomics"],
+          children: [
+            // Professional Cert Track (CA)
+            {
+              id: "ca_chartered_accountant",
+              name: "Chartered Accountancy (CA - ICAI)",
+              level: "Professional Cert",
+              stream: "commerce",
+              duration: "4.5 Years (Inc. 2 Yrs Articleship)",
+              salary: "9 - 22 LPA",
+              description: "Premature professional accounting designation covering Auditing, Taxation, Corporate Law, and Financial Reporting.",
+              exams: ["CA Foundation", "CA Intermediate", "CA Final"],
+              institutions: ["Institute of Chartered Accountants of India (ICAI)"],
+              skills: ["Statutory Audit", "GST & Direct Tax Law", "IFRS / Ind AS", "Corporate Finance"],
+              children: [
+                {
+                  id: "ca_partner_cfo",
+                  name: "CFO / Audit Partner / Managing Director",
+                  level: "Leadership",
+                  stream: "commerce",
+                  duration: "10+ Yrs Exp",
+                  salary: "40 LPA - 1.5 Cr",
+                  description: "Heading enterprise financial strategy, global tax restructuring, M&A operations, Big 4 partner.",
+                  exams: ["ICAI Fellowship (FCA)"],
+                  institutions: ["Big 4 (Deloitte, PwC, EY, KPMG)", "Fortune 500 Enterprises"],
+                  skills: ["Capital Structure", "Enterprise Risk Management", "Global Financial Strategy"]
+                }
+              ]
+            },
+            // Corporate Executive Track (BBA/CAT/MBA)
+            {
+              id: "bcom_bba_ipm",
+              name: "B.Com (Hons) / BBA / IIM IPM Integrated",
+              level: "Bachelor's",
+              stream: "commerce",
+              duration: "3 - 5 Years",
+              salary: "5 - 15 LPA",
+              description: "Business administration, corporate management, marketing fundamentals, and financial economics.",
+              exams: ["CUET UG", "IPMAT (IIM Indore/Rohtak)", "NPAT"],
+              institutions: ["SRCC Delhi", "IIM Indore (IPM)", "Christ University", "St. Xavier's Kolkata"],
+              skills: ["Business Analytics", "Marketing Management", "Financial Modeling"],
+              children: [
+                {
+                  id: "cat_mba",
+                  name: "CAT / XAT & MBA / PGDM",
+                  level: "Master's",
+                  stream: "commerce",
+                  duration: "2 Years",
+                  salary: "18 - 35 LPA",
+                  description: "Master of Business Administration in Finance, Strategy, Operations, Marketing, or Product Management.",
+                  exams: ["CAT", "XAT", "GMAT"],
+                  institutions: ["IIM Ahmedabad", "IIM Bangalore", "IIM Calcutta", "XLRI Jamshedpur", "FMS Delhi"],
+                  skills: ["Corporate Strategy", "M&A Valuation", "Operations Leadership", "Product Lifecycle"],
+                  children: [
+                    {
+                      id: "phd_management",
+                      name: "Ph.D. in Management / FPM (IIMs)",
+                      level: "Doctorate",
+                      stream: "commerce",
+                      duration: "4 - 5 Years",
+                      salary: "Stipend: 35k-45k/mo | 20-40 LPA",
+                      description: "Fellow Programme in Management specializing in Quantitative Finance, Organizational Behavior, or Strategy.",
+                      exams: ["CAT / GMAT / GRE / Research Test"],
+                      institutions: ["IIM Ahmedabad FPM", "IIM Bangalore", "ISB Hyderabad"],
+                      skills: ["Econometrics", "Qualitative/Quantitative Research"],
+                      children: [
+                        {
+                          id: "managing_director_ceo",
+                          name: "CEO / Managing Director / Top Tier IIM Faculty",
+                          level: "Leadership",
+                          stream: "commerce",
+                          duration: "12+ Yrs Exp",
+                          salary: "80 LPA - 3+ Cr",
+                          description: "C-suite executive steering enterprise growth, venture funding, corporate transformations.",
+                          exams: ["Board of Directors Selection"],
+                          institutions: ["Global Multinational Corporations", "Top Business Schools"],
+                          skills: ["P&L Management", "Global Expansion Strategy", "Executive Governance"]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            // CS & CMA Track
+            {
+              id: "cs_cma_track",
+              name: "CS (Company Secretary) / CMA (Cost & Management)",
+              level: "Professional Cert",
+              stream: "commerce",
+              duration: "3 - 4 Years",
+              salary: "7 - 16 LPA",
+              description: "Corporate governance, secretarial compliances, SEBI regulations, cost accounting, and budgeting.",
+              exams: ["CSEET -> Executive -> Professional", "CMA Foundation -> Inter -> Final"],
+              institutions: ["ICSI (Company Secretaries)", "ICMAI (Cost Accountants)"],
+              skills: ["SEBI Regulations", "Corporate Compliance", "Cost Auditing"]
+            }
+          ]
+        },
+
+        // ----------------------------------------------------
+        // STREAM 6: ARTS, HUMANITIES, MEDIA & IAS
+        // ----------------------------------------------------
+        {
+          id: "arts_12th",
+          name: "10+2 Arts & Humanities Stream",
+          level: "Higher Secondary",
+          stream: "arts",
+          duration: "2 Years",
+          salary: "N/A",
+          description: "Focus on Political Science, History, Sociology, Psychology, Economics, and Literature.",
+          exams: ["CUET UG"],
+          institutions: ["CBSE", "ISC", "State Boards"],
+          skills: ["Critical Analysis", "Policy Writing", "Social Theory"],
+          children: [
+            // Civil Services / Public Governance Track
+            {
+              id: "ba_civil_services",
+              name: "B.A. (Hons) Pol Sci / History / Public Policy",
+              level: "Bachelor's",
+              stream: "arts",
+              duration: "3 - 4 Years",
+              salary: "3.5 - 7 LPA",
+              description: "Foundational grounding in public governance, constitutional law, international relations, and history.",
+              exams: ["CUET UG"],
+              institutions: ["Lady Shri Ram College", "Hindu College", "St. Xavier's", "Presidency University"],
+              skills: ["Policy Evaluation", "Public Administration", "Socio-Economic Analysis"],
+              children: [
+                {
+                  id: "upsc_cse_ias",
+                  name: "UPSC CSE / State PSC: IAS, IPS, IFS, IRS",
+                  level: "Master's",
+                  stream: "arts",
+                  duration: "1 - 2 Yrs Prep + Training",
+                  salary: "Pay Level 10 (approx. 10 - 18 LPA + Government Perks)",
+                  description: "Premier Indian Civil Services governing district administration, law & order, foreign diplomatic affairs, and revenue.",
+                  exams: ["UPSC CSE Prelims", "CSE Mains (9 Papers)", "Personality Test Interview"],
+                  institutions: ["LBSNAA Mussoorie (IAS)", "SVPNPA Hyderabad (IPS)", "Sushma Swaraj Institute (IFS)"],
+                  skills: ["District Governance", "Policy Implementation", "Diplomacy", "Public Safety"],
+                  children: [
+                    {
+                      id: "masters_public_policy_phd",
+                      name: "Master's in Public Policy (MPP) / Ph.D in Governance",
+                      level: "Doctorate",
+                      stream: "arts",
+                      duration: "2 - 4 Years",
+                      salary: "18 - 35 LPA",
+                      description: "Advanced policy formulation, evaluation of public schemes, international development fellowship.",
+                      exams: ["Global Fellowships / Mid-Service Officer Training"],
+                      institutions: ["NLS Bangalore (MPP)", "IIM Bangalore (Public Policy)", "Harvard Kennedy School (Fellowship)"],
+                      skills: ["Evidence-based Policy", "Econometric Policy Evaluation"],
+                      children: [
+                        {
+                          id: "cabinet_secretary",
+                          name: "Cabinet Secretary / Foreign Secretary / Chief Policy Advisor",
+                          level: "Leadership",
+                          stream: "arts",
+                          duration: "30+ Yrs Civil Service",
+                          salary: "Apex Scale (2.5 Lakh/mo + Highest Privileges)",
+                          description: "Highest bureaucratic office in India, chief advisor to the Prime Minister and Union Cabinet.",
+                          exams: ["Senior Bureaucratic Service Promotion"],
+                          institutions: ["Cabinet Secretariat", "Ministry of External Affairs", "NITI Aayog"],
+                          skills: ["National Governance", "Diplomatic Leadership", "Macro Policy Direction"]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            // Media & Journalism Track
+            {
+              id: "media_journalism",
+              name: "BJMC / B.A. Media & Journalism",
+              level: "Bachelor's",
+              stream: "arts",
+              duration: "3 Years",
+              salary: "4 - 8 LPA",
+              description: "Mass communication, broadcast media, digital journalism, public relations, and investigative reporting.",
+              exams: ["CUET UG", "IIMC Entrance Exam"],
+              institutions: ["Indian Institute of Mass Communication (IIMC)", "AJK MCRC Jamia", "Xavier Institute of Comm"],
+              skills: ["Investigative Reporting", "Digital Media", "Editing", "Public Relations"],
+              children: [
+                {
+                  id: "senior_editor_pr_dir",
+                  name: "Senior Chief Editor / Corporate PR Director",
+                  level: "Leadership",
+                  stream: "arts",
+                  duration: "10+ Yrs Exp",
+                  salary: "20 - 50 LPA",
+                  description: "Heading national news channels, managing corporate communication strategies, media publishing houses.",
+                  exams: ["Editorial Board Merit"],
+                  institutions: ["National Media Networks", "Global PR Agencies"],
+                  skills: ["Media Strategy", "Crisis Communications", "Editorial Governance"]
+                }
+              ]
+            },
+            // Psychology Track
+            {
+              id: "psychology_track",
+              name: "B.A. / B.Sc Psychology",
+              level: "Bachelor's",
+              stream: "arts",
+              duration: "3 - 4 Years",
+              salary: "3.5 - 6 LPA",
+              description: "Cognitive psychology, behavioral sciences, psychometrics, and developmental research.",
+              exams: ["CUET UG"],
+              institutions: ["DU", "Christ University", "BHU"],
+              skills: ["Psychometric Testing", "Behavioral Analysis"],
+              children: [
+                {
+                  id: "ma_mphil_clinical_psych",
+                  name: "M.A. Clinical Psych + M.Phil / Psy.D (RCI Licensed)",
+                  level: "Doctorate",
+                  stream: "arts",
+                  duration: "2+2 Years",
+                  salary: "8 - 18 LPA",
+                  description: "Rehabilitation Council of India (RCI) recognized licensed Clinical Psychologist practicing in hospitals.",
+                  exams: ["NIMHANS Entrance", "CIP Ranchi Entrance"],
+                  institutions: ["NIMHANS Bangalore", "Central Institute of Psychiatry (CIP) Ranchi", "IHBAS Delhi"],
+                  skills: ["Psychotherapy", "Neuropsychological Assessment", "Clinical Diagnostics"]
+                }
+              ]
+            }
+          ]
+        },
+
+        // ----------------------------------------------------
+        // STREAM 7: LAW & JUDICIARY
+        // ----------------------------------------------------
+        {
+          id: "law_judiciary_path",
+          name: "Law & Judicial Services",
+          level: "Higher Secondary",
+          stream: "law",
+          duration: "5-Year Integrated Degree",
+          salary: "6 - 25 LPA",
+          description: "Legal education covering Constitutional Law, Corporate Law, Criminal Jurisprudence, and International Law.",
+          exams: ["CLAT UG", "AILET", "LSAT India", "MHCET Law"],
+          institutions: ["NLSIU Bangalore", "NALSAR Hyderabad", "WBNUJS Kolkata", "NLU Delhi"],
+          skills: ["Legal Reasoning", "Constitutional Argumentation", "Statutory Interpretation", "Drafting"],
+          children: [
+            {
+              id: "integrated_llb",
+              name: "5-Year Integrated B.A. LL.B (Hons) / BBA LL.B",
+              level: "Bachelor's",
+              stream: "law",
+              duration: "5 Years",
+              salary: "8 - 20 LPA (Corporate Law Placement)",
+              description: "Comprehensive legal education with moot courts, corporate internships, and litigation training.",
+              exams: ["CLAT UG", "AILET"],
+              institutions: ["NLSIU Bangalore", "NALSAR Hyderabad", "WBNUJS Kolkata", "NLU Delhi", "SLS Pune"],
+              skills: ["Contract Drafting", "Mooting", "Legal Research", "Corporate Governance"],
+              children: [
+                // Judicial Services Branch
+                {
+                  id: "judicial_services_judge",
+                  name: "Judicial Services Exam: Civil Judge (Jr Division)",
+                  level: "Master's",
+                  stream: "law",
+                  duration: "1 Year Training",
+                  salary: "Pay Level 10 (approx. 10 - 16 LPA + Perks)",
+                  description: "Entry into State Judicial Services as a Magistrate / Civil Judge presiding over district court trials.",
+                  exams: ["State PCS-J (Judicial Services Examination)"],
+                  institutions: ["State High Court Judicial Academies"],
+                  skills: ["Judicial Writing", "Trial Evaluation", "Evidentiary Assessment"],
+                  children: [
+                    {
+                      id: "district_judge_hc_justice",
+                      name: "District Judge & High Court / Supreme Court Justice",
+                      level: "Leadership",
+                      stream: "law",
+                      duration: "15+ Yrs Judicial Service",
+                      salary: "Constitutional Bench Salaries + Apex Perks",
+                      description: "Higher judiciary judgeship interpreting constitutionality, binding precedents, and appellate jurisdiction.",
+                      exams: ["Collegium Recommendation / Higher Judicial Services (HJS) Exam"],
+                      institutions: ["High Courts of India", "Supreme Court of India"],
+                      skills: ["Constitutional Law", "Appellate Jurisdiction", "Legal Precedent"]
+                    }
+                  ]
+                },
+                // Higher Law & Practice Branch
+                {
+                  id: "llm_masters_law",
+                  name: "LL.M (Master of Laws) & Senior Advocate / General Counsel",
+                  level: "Master's",
+                  stream: "law",
+                  duration: "1 - 2 Years",
+                  salary: "15 - 40 LPA",
+                  description: "Specialized Master's in Corporate M&A, Intellectual Property Law, Arbitration, or Constitutional Law.",
+                  exams: ["CLAT PG", "AILET PG"],
+                  institutions: ["NLSIU Bangalore", "Cambridge / Oxford (Abroad LLM)", "NLU Delhi"],
+                  skills: ["International Arbitration", "Intellectual Property", "M&A Legal Structuring"],
+                  children: [
+                    {
+                      id: "phd_law_senior_counsel",
+                      name: "Ph.D. in Law / Designated Senior Advocate / Law Dean",
+                      level: "Doctorate",
+                      stream: "law",
+                      duration: "3 - 5 Years",
+                      salary: "50 LPA - 2+ Cr (Senior Practice)",
+                      description: "Arguing landmark constitutional cases in Supreme Court or heading corporate legal affairs.",
+                      exams: ["High Court / Supreme Court Senior Designation"],
+                      institutions: ["Supreme Court Bar Association", "Top Tier Law Faculties"],
+                      skills: ["Constitutional Litigation", "Jurisprudential Research", "Supreme Court Practice"]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+
+        // ----------------------------------------------------
+        // STREAM 8: DESIGN, ARCHITECTURE & CREATIVE ARTS
+        // ----------------------------------------------------
+        {
+          id: "design_arch_path",
+          name: "Design, Architecture & Creative Arts",
+          level: "Higher Secondary",
+          stream: "design",
+          duration: "4 - 5 Years",
+          salary: "6 - 18 LPA",
+          description: "Creative disciplines combining aesthetics, human-centered UI/UX, product design, and spatial architecture.",
+          exams: ["NATA", "JEE Main Paper 2 (Arch)", "NIFT Entrance", "UCEED", "NID DAT"],
+          institutions: ["NID Ahmedabad", "IIT Bombay (IDC)", "NIFT Delhi", "SPA New Delhi", "CEPT University"],
+          skills: ["Design Thinking", "3D Modeling", "Spatial Design", "UI/UX Architecture"],
+          children: [
+            {
+              id: "barch_architecture",
+              name: "B.Arch (Bachelor of Architecture)",
+              level: "Bachelor's",
+              stream: "design",
+              duration: "5 Years",
+              salary: "5 - 10 LPA",
+              description: "Building planning, structural design, urban sustainability, and Council of Architecture (COA) license.",
+              exams: ["NATA", "JEE Main Paper 2"],
+              institutions: ["School of Planning & Architecture (SPA) Delhi", "CEPT University", "IIT Kharagpur"],
+              skills: ["Architectural CAD", "Building Information Modeling (BIM)", "Urban Planning"],
+              children: [
+                {
+                  id: "march_chief_architect",
+                  name: "M.Arch / Ph.D & Chief Urban Architect",
+                  level: "Doctorate",
+                  stream: "design",
+                  duration: "2 - 4 Years",
+                  salary: "18 - 45 LPA",
+                  description: "Heading smart city urban master planning, mega infrastructure architecture, and sustainable design.",
+                  exams: ["CEED", "GATE Architecture"],
+                  institutions: ["SPA Delhi", "CEPT University", "IIT Roorkee"],
+                  skills: ["Smart City Masterplanning", "Sustainable Architecture", "Urban Design"]
+                }
+              ]
+            },
+            {
+              id: "bdes_product_uiux",
+              name: "B.Des in UI/UX, Product Design & Industrial Design",
+              level: "Bachelor's",
+              stream: "design",
+              duration: "4 Years",
+              salary: "8 - 22 LPA",
+              description: "Human-centric digital product design, interactive software interfaces, hardware product design.",
+              exams: ["UCEED", "NID DAT"],
+              institutions: ["NID Ahmedabad", "IDC School of Design (IIT Bombay)", "IIT Guwahati"],
+              skills: ["User Research", "Wireframing", "Prototyping", "Interaction Design"],
+              children: [
+                {
+                  id: "mdes_chief_design_officer",
+                  name: "M.Des (CEED) -> Chief Design Officer (CDO)",
+                  level: "Leadership",
+                  stream: "design",
+                  duration: "8+ Yrs Exp",
+                  salary: "35 - 80 LPA",
+                  description: "Directing global digital product design systems, user experience strategy for tech platforms.",
+                  exams: ["CEED (Common Entrance Examination for Design)"],
+                  institutions: ["IIT Bombay IDC", "NID Ahmedabad", "Global Tech Studios"],
+                  skills: ["Design System Governance", "User Experience Strategy", "Brand Architecture"]
+                }
+              ]
+            }
+          ]
+        },
+
+        // ----------------------------------------------------
+        // STREAM 9: VOCATIONAL, TECHNICAL & DIPLOMA
+        // ----------------------------------------------------
+        {
+          id: "vocational_polytechnic",
+          name: "Polytechnic Diploma & Vocational Training",
+          level: "Higher Secondary",
+          stream: "vocational",
+          duration: "3 Years (Post-10th)",
+          salary: "3 - 6 LPA",
+          description: "Hands-on engineering technician diplomas (Mechanical, Electrical, Civil, CS) & ITI vocational trades.",
+          exams: ["State Polytechnic Entrance Exams (POLYCET)", "ITI Trade Exams"],
+          institutions: ["State Board of Technical Education Diplomas"],
+          skills: ["Practical Maintenance", "PLC Operations", "Circuit Assembly", "Machining"],
+          children: [
+            {
+              id: "diploma_lateral_btech",
+              name: "Lateral Entry B.Tech / B.E (Direct 2nd Year Entry)",
+              level: "Bachelor's",
+              stream: "vocational",
+              duration: "3 Years",
+              salary: "6 - 12 LPA",
+              description: "Upgrading polytechnic diploma directly into second year of full B.Tech degree.",
+              exams: ["Lateral Entry Entrance Test (ECET / LEET)"],
+              institutions: ["State Engineering Colleges", "Technological Universities"],
+              skills: ["Advanced Engineering", "CAD/CAM", "Embedded Systems"],
+              children: [
+                {
+                  id: "mtech_vocational_lead",
+                  name: "M.Tech / Senior Industry Technical Consultant",
+                  level: "Master's",
+                  stream: "vocational",
+                  duration: "2 Years",
+                  salary: "12 - 25 LPA",
+                  description: "Master's specialization leading to industrial automation specialist, plant head, operations lead.",
+                  exams: ["GATE Exam"],
+                  institutions: ["NITs", "State Universities"],
+                  skills: ["Industrial Automation", "Plant Operations", "Quality Control (Six Sigma)"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    };
+
+    // ==========================================
+    // 2. STYLING & STREAM COLOR MAPPING
+    // ==========================================
+    const streamColors = {
+      all: { bg: "#3b82f6", border: "#60a5fa", text: "#dbeafe", label: "General" },
+      pcm: { bg: "#0284c7", border: "#38bdf8", text: "#e0f2fe", label: "Science (PCM)" },
+      pcb: { bg: "#059669", border: "#34d399", text: "#d1fae5", label: "Science (PCB)" },
+      defence: { bg: "#dc2626", border: "#f87171", text: "#fee2e2", label: "Defence Forces" },
+      academia: { bg: "#4f46e5", border: "#818cf8", text: "#e0e7ff", label: "Academia" },
+      commerce: { bg: "#d97706", border: "#fbbf24", text: "#fef3c7", label: "Commerce" },
+      arts: { bg: "#9333ea", border: "#c084fc", text: "#f3e8ff", label: "Arts & IAS" },
+      law: { bg: "#ca8a04", border: "#facc15", text: "#fef9c3", label: "Law & Judicial" },
+      design: { bg: "#db2777", border: "#f472b6", text: "#fce7f3", label: "Design & Arch" },
+      vocational: { bg: "#0d9488", border: "#2dd4bf", text: "#ccfbf1", label: "Vocational" }
+    };
+
+    const levelBadgeColors = {
+      "School": { bg: "bg-slate-700", text: "text-slate-300" },
+      "Higher Secondary": { bg: "bg-slate-800", text: "text-slate-200" },
+      "Bachelor's": { bg: "bg-blue-900/60", text: "text-blue-300" },
+      "Master's": { bg: "bg-indigo-900/60", text: "text-indigo-300" },
+      "Doctorate": { bg: "bg-purple-900/60", text: "text-purple-300" },
+      "Professional Cert": { bg: "bg-amber-900/60", text: "text-amber-300" },
+      "Leadership": { bg: "bg-emerald-900/60", text: "text-emerald-300" }
+    };
+
+    // ==========================================
+    // 3. D3 TREE RENDER & CONTROL SETUP
+    // ==========================================
+    let rootNode, svg, gLink, gNode, zoomBehavior;
+    let selectedNodeData = null;
+    let currentFilterStream = "all";
+
+    // Dynamic sizing based on viewport
+    const container = d3.select("#tree-container");
+    const nodeWidth = 240;
+    const nodeHeight = 85;
+
+    function initTree() {
+      // Clear existing content
+      container.selectAll("*").remove();
+
+      const width = container.node().clientWidth;
+      const height = container.node().clientHeight;
+
+      // Create main SVG
+      svg = container.append("svg")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .attr("viewBox", [0, 0, width, height]);
+
+      const g = svg.append("g").attr("id", "zoom-group");
+
+      // Configure Zoom/Pan
+      zoomBehavior = d3.zoom()
+        .scaleExtent([0.15, 2.5])
+        .on("zoom", (event) => {
+          g.attr("transform", event.transform);
+        });
+
+      svg.call(zoomBehavior).on("dblclick.zoom", null);
+
+      gLink = g.append("g").attr("class", "links");
+      gNode = g.append("g").attr("class", "nodes");
+
+      // Prepare Hierarchy
+      rootNode = d3.hierarchy(treeData);
+      rootNode.x0 = width / 2;
+      rootNode.y0 = 60;
+
+      // Collapse nodes deeper than Level 2 by default to keep clean viewport
+      rootNode.children.forEach(collapseDeepNodes);
+
+      updateTree(rootNode);
+
+      // Initial center alignment
+      resetView();
+    }
+
+    function collapseDeepNodes(d) {
+      if (d.children) {
+        d._children = d.children;
+        d._children.forEach(collapseDeepNodes);
+        d.children = null;
+      }
+    }
+
+    function expandAllNodes(d) {
+      if (d._children) {
+        d.children = d._children;
+        d._children = null;
+      }
+      if (d.children) {
+        d.children.forEach(expandAllNodes);
+      }
+    }
+
+    function collapseAllNodes(d) {
+      if (d.children) {
+        d._children = d.children;
+        d.children.forEach(collapseAllNodes);
+        d.children = null;
+      }
+    }
+
+    // Main Layout Update Function
+    function updateTree(source) {
+      const treeLayout = d3.tree()
+        .nodeSize([nodeWidth + 40, nodeHeight + 80])
+        .separation((a, b) => (a.parent === b.parent ? 1.1 : 1.3));
+
+      const treeDataLayout = treeLayout(rootNode);
+      const nodes = treeDataLayout.descendants();
+      const links = treeDataLayout.links();
+
+      // Depth offset for clean downward spacing
+      nodes.forEach(d => { d.y = d.depth * 160 + 60; });
+
+      // ----------------------------------------------------
+      // NODES SELECTION
+      // ----------------------------------------------------
+      const nodeSel = gNode.selectAll("g.node")
+        .data(nodes, d => d.data.id);
+
+      const nodeEnter = nodeSel.enter().append("g")
+        .attr("class", "node")
+        .attr("transform", d => `translate(${source.x0},${source.y0})`)
+        .on("click", (event, d) => {
+          event.stopPropagation();
+          // Toggle Children expansion on node click
+          if (d.children) {
+            d._children = d.children;
+            d.children = null;
+          } else if (d._children) {
+            d.children = d._children;
+            d._children = null;
+          }
+          updateTree(d);
+          openDrawer(d.data);
+        });
+
+      // Outer Rounded Rectangle
+      nodeEnter.append("rect")
+        .attr("class", "node-rect")
+        .attr("width", nodeWidth)
+        .attr("height", nodeHeight)
+        .attr("x", -nodeWidth / 2)
+        .attr("y", 0)
+        .attr("rx", 12)
+        .attr("ry", 12)
+        .attr("fill", d => "#0f172a")
+        .attr("stroke", d => (streamColors[d.data.stream] || streamColors.all).border)
+        .attr("stroke-width", "1.8px");
+
+      // Left Color Accent Bar
+      nodeEnter.append("rect")
+        .attr("width", 6)
+        .attr("height", nodeHeight)
+        .attr("x", -nodeWidth / 2)
+        .attr("y", 0)
+        .attr("rx", 3)
+        .attr("fill", d => (streamColors[d.data.stream] || streamColors.all).bg);
+
+      // Node Stream Label Badge (Top Right)
+      nodeEnter.append("text")
+        .attr("x", nodeWidth / 2 - 10)
+        .attr("y", 18)
+        .attr("text-anchor", "end")
+        .attr("fill", d => (streamColors[d.data.stream] || streamColors.all).border)
+        .attr("font-size", "9px")
+        .attr("font-weight", "700")
+        .text(d => (streamColors[d.data.stream] || streamColors.all).label.toUpperCase());
+
+      // Node Level Badge (Top Left inside)
+      nodeEnter.append("text")
+        .attr("x", -nodeWidth / 2 + 16)
+        .attr("y", 18)
+        .attr("fill", "#94a3b8")
+        .attr("font-size", "9.5px")
+        .attr("font-weight", "600")
+        .text(d => d.data.level);
+
+      // Primary Title (Wrapped if long)
+      nodeEnter.append("text")
+        .attr("x", -nodeWidth / 2 + 16)
+        .attr("y", 38)
+        .attr("fill", "#f8fafc")
+        .attr("font-size", "11.5px")
+        .attr("font-weight", "700")
+        .text(d => truncateText(d.data.name, 28));
+
+      // Duration & Salary Subtext
+      nodeEnter.append("text")
+        .attr("x", -nodeWidth / 2 + 16)
+        .attr("y", 56)
+        .attr("fill", "#38bdf8")
+        .attr("font-size", "10px")
+        .attr("font-weight", "500")
+        .text(d => `⏱ ${d.data.duration}`);
+
+      nodeEnter.append("text")
+        .attr("x", -nodeWidth / 2 + 16)
+        .attr("y", 71)
+        .attr("fill", "#34d399")
+        .attr("font-size", "10px")
+        .attr("font-weight", "600")
+        .text(d => `💰 ${d.data.salary}`);
+
+      // Expand/Collapse Indicator Circle
+      const toggleCircle = nodeEnter.append("g")
+        .attr("class", "toggle-circle")
+        .attr("transform", `translate(0, ${nodeHeight})`);
+
+      toggleCircle.append("circle")
+        .attr("r", 9)
+        .attr("fill", "#1e293b")
+        .attr("stroke", d => (streamColors[d.data.stream] || streamColors.all).border)
+        .attr("stroke-width", "1.5");
+
+      toggleCircle.append("text")
+        .attr("class", "toggle-icon")
+        .attr("text-anchor", "middle")
+        .attr("dy", "3.5px")
+        .attr("fill", "#f8fafc")
+        .attr("font-size", "10px")
+        .attr("font-weight", "bold")
+        .text(d => (d.children ? "−" : d._children ? "+" : ""));
+
+      // TRANSITION NODES
+      const nodeUpdate = nodeSel.merge(nodeEnter).transition().duration(350)
+        .attr("transform", d => `translate(${d.x},${d.y})`);
+
+      nodeUpdate.select("rect.node-rect")
+        .attr("stroke", d => (streamColors[d.data.stream] || streamColors.all).border);
+
+      nodeUpdate.select(".toggle-icon")
+        .text(d => (d.children ? "−" : d._children ? "+" : ""));
+
+      nodeUpdate.select(".toggle-circle")
+        .style("opacity", d => (d.children || d._children ? 1 : 0));
+
+      const nodeExit = nodeSel.exit().transition().duration(300)
+        .attr("transform", d => `translate(${source.x},${source.y})`)
+        .remove();
+
+      // ----------------------------------------------------
+      // LINKS SELECTION (Curved Bezier Paths)
+      // ----------------------------------------------------
+      const linkSel = gLink.selectAll("path.link")
+        .data(links, d => d.target.data.id);
+
+      const linkEnter = linkSel.enter().append("path")
+        .attr("class", "link")
+        .attr("d", d => {
+          const o = { x: source.x0, y: source.y0 };
+          return diagonalCurve(o, o);
+        });
+
+      linkSel.merge(linkEnter).transition().duration(350)
+        .attr("d", d => diagonalCurve(d.source, d.target));
+
+      linkSel.exit().transition().duration(300)
+        .attr("d", d => {
+          const o = { x: source.x, y: source.y };
+          return diagonalCurve(o, o);
+        })
+        .remove();
+
+      // Store previous positions
+      nodes.forEach(d => {
+        d.x0 = d.x;
+        d.y0 = d.y;
+      });
+    }
+
+    // Helper for smooth Bezier Downward Curves
+    function diagonalCurve(s, t) {
+      const sourceY = s.y + nodeHeight;
+      const targetY = t.y;
+      return `M ${s.x} ${sourceY}
+              C ${s.x} ${(sourceY + targetY) / 2},
+                ${t.x} ${(sourceY + targetY) / 2},
+                ${t.x} ${targetY}`;
+    }
+
+    function truncateText(text, maxLen) {
+      if (!text) return "";
+      return text.length > maxLen ? text.substring(0, maxLen - 2) + ".." : text;
+    }
+
+    // ==========================================
+    // 4. SEARCH & FULL PATH TRACING SYSTEM
+    // ==========================================
+    const searchInput = document.getElementById("search-input");
+    const searchResults = document.getElementById("search-results");
+    const clearSearchBtn = document.getElementById("clear-search");
+
+    searchInput.addEventListener("input", (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      if (query.length > 0) {
+        clearSearchBtn.classList.remove("hidden");
+        renderSearchResults(query);
+      } else {
+        clearSearchBtn.classList.add("hidden");
+        searchResults.classList.add("hidden");
+        clearHighlights();
+      }
+    });
+
+    clearSearchBtn.addEventListener("click", () => {
+      searchInput.value = "";
+      clearSearchBtn.classList.add("hidden");
+      searchResults.classList.add("hidden");
+      clearHighlights();
+    });
+
+    function renderSearchResults(query) {
+      const allDescendants = getAllNodesFlat(treeData);
+      const matched = allDescendants.filter(n => 
+        n.name.toLowerCase().includes(query) ||
+        n.level.toLowerCase().includes(query) ||
+        n.description.toLowerCase().includes(query) ||
+        (n.exams && n.exams.some(ex => ex.toLowerCase().includes(query)))
+      );
+
+      if (matched.length === 0) {
+        searchResults.innerHTML = `<div class="p-3 text-slate-500 italic">No matching career paths found.</div>`;
+      } else {
+        searchResults.innerHTML = matched.map(m => `
+          <div class="p-2.5 hover:bg-slate-800 cursor-pointer flex items-center justify-between transition" onclick="selectSearchTarget('${m.id}')">
+            <div>
+              <div class="font-bold text-slate-200">${m.name}</div>
+              <div class="text-[10px] text-slate-400">${m.level} • ${m.duration}</div>
+            </div>
+            <span class="text-[9px] px-2 py-0.5 rounded border border-slate-700 bg-slate-950 text-blue-400">
+              ${m.stream.toUpperCase()}
+            </span>
+          </div>
+        `).join("");
+      }
+      searchResults.classList.remove("hidden");
+    }
+
+    function getAllNodesFlat(node) {
+      let result = [node];
+      if (node.children) {
+        node.children.forEach(c => {
+          result = result.concat(getAllNodesFlat(c));
+        });
+      }
+      return result;
+    }
+
+    // Public method accessible via search result click
+    window.selectSearchTarget = function(nodeId) {
+      searchResults.classList.add("hidden");
+      traceAndFocusPath(nodeId);
+    };
+
+    function traceAndFocusPath(targetId) {
+      clearHighlights();
+
+      // Expand necessary ancestors dynamically
+      function expandPathToTarget(currentNode, targetId) {
+        if (currentNode.data.id === targetId) return true;
+
+        const childrenList = currentNode.children || currentNode._children;
+        if (childrenList) {
+          for (let child of childrenList) {
+            if (expandPathToTarget(child, targetId)) {
+              if (currentNode._children) {
+                currentNode.children = currentNode._children;
+                currentNode._children = null;
+              }
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      expandPathToTarget(rootNode, targetId);
+      updateTree(rootNode);
+
+      // Locate target d3 node in updated layout
+      const targetD3Node = rootNode.descendants().find(d => d.data.id === targetId);
+
+      if (targetD3Node) {
+        // Build ancestor list for path highlighting
+        const pathAncestors = new Set(targetD3Node.ancestors().map(a => a.data.id));
+
+        // Highlight nodes
+        gNode.selectAll("g.node")
+          .filter(d => pathAncestors.has(d.data.id))
+          .classList?.add("highlighted");
+
+        // Highlight DOM node elements
+        gNode.selectAll("g.node")
+          .filter(d => pathAncestors.has(d.data.id))
+          .select("rect.node-rect")
+          .attr("stroke", "#38bdf8")
+          .attr("stroke-width", "3px");
+
+        // Highlight connects
+        gLink.selectAll("path.link")
+          .filter(d => pathAncestors.has(d.target.data.id))
+          .classed("highlighted", true);
+
+        // Center View on target node
+        zoomToNode(targetD3Node);
+        openDrawer(targetD3Node.data);
+      }
+    }
+
+    function clearHighlights() {
+      gNode.selectAll("g.node select rect.node-rect")
+        .attr("stroke-width", "1.8px");
+      gLink.selectAll("path.link").classed("highlighted", false);
+    }
+
+    function zoomToNode(d3Node) {
+      const width = container.node().clientWidth;
+      const height = container.node().clientHeight;
+      const scale = 1.1;
+      const x = -d3Node.x * scale + width / 2;
+      const y = -d3Node.y * scale + height / 2.5;
+
+      svg.transition().duration(750).call(
+        zoomBehavior.transform,
+        d3.zoomIdentity.translate(x, y).scale(scale)
+      );
+    }
+
+    function resetView() {
+      const width = container.node().clientWidth;
+      const scale = 0.85;
+      const x = width / 2;
+      const y = 80;
+
+      svg.transition().duration(750).call(
+        zoomBehavior.transform,
+        d3.zoomIdentity.translate(x - (rootNode.x * scale), y).scale(scale)
+      );
+    }
+
+    // ==========================================
+    // 5. DRAWER MODAL & DETAILS MANAGEMENT
+    // ==========================================
+    const detailDrawer = document.getElementById("detail-drawer");
+    const closeDrawerBtn = document.getElementById("close-drawer");
+    const drawerTraceBtn = document.getElementById("drawer-trace-btn");
+
+    function openDrawer(data) {
+      selectedNodeData = data;
+      const strInfo = streamColors[data.stream] || streamColors.all;
+
+      document.getElementById("drawer-title").innerText = data.name;
+      document.getElementById("drawer-level").innerText = `Level: ${data.level}`;
+      document.getElementById("drawer-duration").innerText = data.duration || "N/A";
+      document.getElementById("drawer-salary").innerText = data.salary || "N/A";
+      document.getElementById("drawer-description").innerText = data.description || "No description available.";
+
+      // Stream badge
+      const badge = document.getElementById("drawer-stream-badge");
+      badge.innerText = strInfo.label;
+      badge.style.backgroundColor = strInfo.bg + "33";
+      badge.style.borderColor = strInfo.border;
+      badge.style.color = strInfo.border;
+
+      // Exams
+      const examsContainer = document.getElementById("drawer-exams");
+      examsContainer.innerHTML = (data.exams || ["Standard Academic Progress"])
+        .map(ex => `<span class="px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-300 font-medium">${ex}</span>`)
+        .join("");
+
+      // Institutions
+      const instContainer = document.getElementById("drawer-institutions");
+      instContainer.innerHTML = (data.institutions || ["Top Universities Across India"])
+        .map(inst => `<li>${inst}</li>`)
+        .join("");
+
+      // Skills
+      const skillsContainer = document.getElementById("drawer-skills");
+      skillsContainer.innerHTML = (data.skills || ["Analytical Reasoning", "Core Domain Competency"])
+        .map(sk => `<span class="px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-medium">${sk}</span>`)
+        .join("");
+
+      detailDrawer.classList.remove("translate-x-full");
+    }
+
+    function closeDrawer() {
+      detailDrawer.classList.add("translate-x-full");
+    }
+
+    closeDrawerBtn.addEventListener("click", closeDrawer);
+
+    drawerTraceBtn.addEventListener("click", () => {
+      if (selectedNodeData) {
+        traceAndFocusPath(selectedNodeData.id);
+      }
+    });
+
+    // Dismiss drawer when clicking on empty canvas
+    container.on("click", () => {
+      closeDrawer();
+      clearHighlights();
+    });
+
+    // ==========================================
+    // 6. GLOBAL BUTTON CONTROLS & STREAM FILTERS
+    // ==========================================
+    document.getElementById("btn-expand-all").addEventListener("click", () => {
+      expandAllNodes(rootNode);
+      updateTree(rootNode);
+    });
+
+    document.getElementById("btn-collapse-all").addEventListener("click", () => {
+      if (rootNode.children) {
+        rootNode.children.forEach(collapseAllNodes);
+      }
+      updateTree(rootNode);
+    });
+
+    document.getElementById("btn-reset-zoom").addEventListener("click", resetView);
+
+    document.getElementById("zoom-in").addEventListener("click", () => {
+      svg.transition().duration(300).call(zoomBehavior.scaleBy, 1.3);
+    });
+
+    document.getElementById("zoom-out").addEventListener("click", () => {
+      svg.transition().duration(300).call(zoomBehavior.scaleBy, 0.7);
+    });
+
+    // Filter Buttons
+    document.querySelectorAll(".filter-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        document.querySelectorAll(".filter-btn").forEach(b => {
+          b.classList.remove("active", "border-blue-500", "bg-blue-500/20", "text-blue-300");
+          b.classList.add("border-slate-700", "bg-slate-800/80", "text-slate-300");
+        });
+
+        const selectedBtn = e.currentTarget;
+        selectedBtn.classList.add("active", "border-blue-500", "bg-blue-500/20", "text-blue-300");
+        selectedBtn.classList.remove("border-slate-700", "bg-slate-800/80");
+
+        currentFilterStream = selectedBtn.dataset.stream;
+        applyStreamFilter(currentFilterStream);
+      });
+    });
+
+    function applyStreamFilter(stream) {
+      if (stream === "all") {
+        rootNode.children = rootNode.children || rootNode._children;
+        if (rootNode._children) rootNode._children = null;
+      } else {
+        // Expand root children
+        if (rootNode._children) {
+          rootNode.children = rootNode._children;
+          rootNode._children = null;
+        }
+        // Collapse branches not matching stream
+        rootNode.children.forEach(child => {
+          if (child.data.stream === stream) {
+            expandAllNodes(child);
+          } else {
+            collapseAllNodes(child);
+          }
+        });
+      }
+      updateTree(rootNode);
+      resetView();
+    }
+
+    // Window Resize Handling
+    window.addEventListener("resize", () => {
+      initTree();
+    });
+
+    // Start App on Load
+    window.onload = function() {
+      initTree();
+    };
+  </script>
+</body>
+</html>
