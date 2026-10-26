@@ -2,7 +2,7 @@
 
 An interactive, web-based career decision roadmap and downward flow tree designed for Indian students and career counselors. This tool visualizes the complete academic and career journey in India—from Class 10th board exams all the way through 10+2 streams, Bachelor's degrees, Master's specializations, Ph.D. Doctorates, and top C-suite or administrative leadership positions.
 
-url: https://naveenkumararemanda.github.io/Education-Career-Navigator/
+url:[ https://naveenkumararemanda.github.io/Education-Career-Navigator/](https://nkumararemanda.github.io/Education-Career-Pathways-Map/)
 ---
 
 ## 🌟 Key Features
